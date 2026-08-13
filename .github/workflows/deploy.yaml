@@ -197,7 +197,9 @@ jobs:
 
   publish-stable:
     name: 📢 Publish to stable repository
-    if: needs.information.outputs.environment == 'stable'
+    if: |
+      needs.information.outputs.environment == 'stable'
+      && vars.SYNC_CATALOG_DIRECTLY != 'true'
     needs:
       - information
       - manifest
@@ -218,3 +220,71 @@ jobs:
               "repository": "${{ github.repository }}",
               "version": "${{ github.event.release.tag_name }}"
             }
+
+  sync-catalog:
+    name: 🔄 Sync app catalog directly
+    # Fallback for when the catalog repository cannot run the repository
+    # updater workflow itself. Enable by setting the repository variable
+    # SYNC_CATALOG_DIRECTLY to "true"; the publish-stable job is then skipped
+    # so only a single writer updates the catalog.
+    if: |
+      needs.information.outputs.environment == 'stable'
+      && vars.SYNC_CATALOG_DIRECTLY == 'true'
+    needs:
+      - information
+      - manifest
+    environment:
+      name: stable
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          path: app
+          persist-credentials: false
+      - name: ⤵️ Check out the app catalog
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.STABLE_REPOSITORY }}
+          ref: master
+          path: catalog
+          token: ${{ secrets.DISPATCH_TOKEN }}
+      - name: 🔄 Update the app in the catalog
+        env:
+          # yamllint disable-line rule:line-length
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ needs.information.outputs.slug }}
+          SLUG: ${{ needs.information.outputs.slug }}
+          TARGET: ${{ needs.information.outputs.target }}
+          VERSION: ${{ needs.information.outputs.version }}
+        run: |
+          mkdir -p "catalog/${SLUG}"
+          cp "app/${TARGET}/config.yaml" "catalog/${SLUG}/config.yaml"
+
+          for asset in DOCS.md icon.png logo.png translations; do
+            if [[ -e "app/${TARGET}/${asset}" ]]; then
+              cp -r "app/${TARGET}/${asset}" "catalog/${SLUG}/${asset}"
+            fi
+          done
+
+          yq --inplace \
+            '.version = strenv(VERSION) | .image = strenv(IMAGE)' \
+            "catalog/${SLUG}/config.yaml"
+      - name: 🚀 Commit and push the catalog update
+        env:
+          NAME: ${{ needs.information.outputs.name }}
+          VERSION: ${{ needs.information.outputs.version }}
+        working-directory: catalog
+        run: |
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "Catalog is already up to date, nothing to do."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit --message "⬆️ Update ${NAME} to ${VERSION}"
+          git push

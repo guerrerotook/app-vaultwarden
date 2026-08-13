@@ -49,5 +49,29 @@ The `version` key in `vaultwarden/config.yaml` stays at `dev`; the real version
 is injected during the release build. The container packages on GHCR must be
 public, otherwise Home Assistant cannot pull them.
 
+### Keeping the app catalog in sync
+
+For the dispatch to actually update `bitwarden/config.yaml` in the catalog
+repository, that repository needs:
+
+1. GitHub Actions enabled (Settings → Actions → General), so that
+   `.github/workflows/repository-updater.yaml` on `master` is registered and
+   can receive the `repository_dispatch` event.
+
+1. An `UPDATER_TOKEN` secret with write access, used by the repository updater
+   to commit the version bump back to `master`.
+
+1. A `DISCORD_WEBHOOK` secret, or the `announce` job removed, so a missing
+   webhook does not fail the run.
+
+If enabling Actions in the catalog repository is not an option, this repository
+can write the update itself instead. Set the repository variable
+`SYNC_CATALOG_DIRECTLY` to `true`: the `sync-catalog` job then copies
+`vaultwarden/config.yaml` (plus `DOCS.md`, `icon.png`, `logo.png` and
+`translations/`) into `bitwarden/` in the catalog repository, sets `version` and
+`image`, and pushes the change using the `DISPATCH_TOKEN` secret. The
+`publish-stable` dispatch job is skipped while this variable is set, so only one
+writer ever updates the catalog.
+
 [github]: https://github.com/hassio-addons/app-vaultwarden/issues
 [prs]: https://github.com/hassio-addons/app-vaultwarden/pulls
