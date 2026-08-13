@@ -30,7 +30,7 @@ jobs:
       packages: read
       pull-requests: read
       security-events: write
-    uses: hassio-addons/workflows/.github/workflows/app-ci.yaml@3846ae0fd09acec8ac1ac308ceacd052b9d01bec # v2.0.6
+    uses: hassio-addons/workflows/.github/workflows/app-ci.yaml@383c10d83acbe341acbb35a4a61bfd14827f00f0 # v3.0.0
     with:
       slug: "bitwarden"
 
@@ -52,7 +52,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: 🚀 Run app information action
@@ -104,11 +104,11 @@ jobs:
         architecture: ${{ fromJson(needs.information.outputs.architectures) }}
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: 🏗 Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: ℹ️ Compose build flags
         id: flags
         env:
@@ -128,13 +128,13 @@ jobs:
             exit 1
           fi
       - name: 🏗  Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: 🚀 Build and push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           outputs: type=image,push=true,compression=zstd,compression-level=9,force-compression=true,oci-mediatypes=true
           # yamllint disable rule:line-length
@@ -171,9 +171,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🏗 Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: 🏗  Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
