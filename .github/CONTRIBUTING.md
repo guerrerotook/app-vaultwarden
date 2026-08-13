@@ -25,5 +25,29 @@ Even better: You could submit a pull request with a fix / new feature!
    developers, or if you do not have permission to do that, you may request
    the second reviewer to merge it for you.
 
+## Releasing
+
+Publishing a new version is fully driven by GitHub releases:
+
+1. Create a GitHub release tagged `vX.Y.Z` (for example `v0.28.0`). Always use
+   this scheme: the container tag is the git tag with the leading `v` stripped,
+   and Home Assistant compares that exact string with the `version` in the app
+   catalog.
+
+1. The `Deploy` workflow builds and pushes
+   `ghcr.io/<owner>/bitwarden/<arch>:X.Y.Z`, then creates the multi-arch
+   manifests `ghcr.io/<owner>/bitwarden:X.Y.Z` and
+   `ghcr.io/<owner>/bitwarden:stable`.
+
+1. Finally it dispatches an `update` event to the app catalog repository
+   (`<owner>/repository`), whose repository updater bumps `bitwarden/config.yaml`
+   to the new version. This requires the `DISPATCH_TOKEN` secret in this
+   repository to be a token with write access to the catalog repository, and the
+   `UPDATER_TOKEN` secret to be configured there.
+
+The `version` key in `vaultwarden/config.yaml` stays at `dev`; the real version
+is injected during the release build. The container packages on GHCR must be
+public, otherwise Home Assistant cannot pull them.
+
 [github]: https://github.com/hassio-addons/app-vaultwarden/issues
 [prs]: https://github.com/hassio-addons/app-vaultwarden/pulls
